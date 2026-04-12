@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Retirement Investment Calculator</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #ffffff;
+      --bg2:       #f5f5f4;
+      --bg3:       #efefed;
+      --text:      #1a1a18;
+      --text2:     #6b6b67;
+      --text3:     #9b9b96;
+      --border:    rgba(0,0,0,0.12);
+      --border2:   rgba(0,0,0,0.2);
+      --success-bg: #eaf3de;
+      --success-fg: #3b6d11;
+      --danger-bg:  #fcebeb;
+      --danger-fg:  #a32d2d;
+      --warn-bg:    #faeeda;
+      --warn-fg:    #854f0b;
+      --radius-md:  8px;
+      --radius-lg:  12px;
+      --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:        #1c1c1a;
+        --bg2:       #252523;
+        --bg3:       #2e2e2b;
+        --text:      #efefed;
+        --text2:     #9b9b96;
+        --text3:     #6b6b67;
+        --border:    rgba(255,255,255,0.1);
+        --border2:   rgba(255,255,255,0.18);
+        --success-bg: #1a2e0d;
+        --success-fg: #7ec44a;
+        --danger-bg:  #2e1010;
+        --danger-fg:  #f09595;
+        --warn-bg:    #2e1f06;
+        --warn-fg:    #fac775;
+      }
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg3);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.5rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--text2);
+      margin-bottom: 1.5rem;
+    }
+
+    .sec {
+      font-size: 11px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text3);
+      margin: 0 0 10px;
+    }
+
+    /* ── Inputs ── */
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 1.75rem;
+    }
+
+    .ig {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .ig label {
+      font-size: 12px;
+      color: var(--text2);
+    }
+
+    .ig input {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 14px;
+      font-family: var(--font);
+      background: var(--bg2);
+      color: var(--text);
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius-md);
+      outline: none;
+      transition: border-color .15s;
+    }
+
+    .ig input:focus {
+      border-color: #185FA5;
+      box-shadow: 0 0 0 3px rgba(24,95,165,0.12);
+    }
+
+    /* ── Metric cards ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .mc {
+      background: var(--bg2);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+    }
+
+    .mc .lb {
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 4px;
+    }
+
+    .mc .vl {
+      font-size: 19px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .mc .vl.success { color: var(--success-fg); }
+    .mc .vl.danger  { color: var(--danger-fg); }
+
+    /* ── Verdict / info boxes ── */
+    .verdict {
+      border-radius: var(--radius-md);
+      padding: 13px 16px;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+
+    .verdict.success { background: var(--success-bg); color: var(--success-fg); }
+    .verdict.danger  { background: var(--danger-bg);  color: var(--danger-fg); }
+
+    .info-box {
+      background: var(--bg2);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 1.5rem;
+    }
+
+    .info-box .label {
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 5px;
+    }
+
+    .info-box .big {
+      font-size: 24px;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .info-box .tag {
+      font-size: 13px;
+      margin-left: 10px;
+    }
+
+    .tag.success { color: var(--success-fg); }
+    .tag.danger  { color: var(--danger-fg); }
+
+    /* ── Note pill ── */
+    .note-pill {
+      display: inline-block;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 12px;
+      background: var(--warn-bg);
+      color: var(--warn-fg);
+      margin-bottom: 10px;
+    }
+
+    /* ── Legend ── */
+    .legend {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--text2);
+      margin-bottom: 10px;
+      align-items: center;
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 2px;
+      display: inline-block;
+      flex-shrink: 0;
+    }
+
+    .dash-swatch {
+      display: inline-block;
+      width: 20px;
+      height: 0;
+      border-top: 2px dashed #E24B4A;
+      vertical-align: middle;
+    }
+
+    /* ── Chart ── */
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 300px;
+    }
+
+    /* ── Divider ── */
+    hr {
+      border: none;
+      border-top: 0.5px solid var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      font-size: 12px;
+      color: var(--text3);
+      margin-top: 1.5rem;
+      padding-top: 1rem;
+      border-top: 0.5px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+
+  <h1>Retirement Investment Calculator</h1>
+  <p class="subtitle">All monetary values in ₹. Projections assume monthly SIP compounding pre-retirement and annual compounding post-retirement.</p>
+
+  <!-- ── INPUTS ── -->
+  <p class="sec">Inputs</p>
+  <div class="input-grid">
+    <div class="ig">
+      <label>Current corpus (₹)</label>
+      <input type="number" id="corpus" value="2500000" min="0" step="10000" />
+    </div>
+    <div class="ig">
+      <label>Monthly SIP (₹)</label>
+      <input type="number" id="sip" value="25000" min="0" step="500" />
+    </div>
+    <div class="ig">
+      <label>SIP step-up (%/yr)</label>
+      <input type="number" id="stepup" value="10" min="0" max="100" step="0.5" />
+    </div>
+    <div class="ig">
+      <label>Current age</label>
+      <input type="number" id="currentAge" value="30" min="18" max="79" />
+    </div>
+    <div class="ig">
+      <label>Retirement age</label>
+      <input type="number" id="retirementAge" value="55" min="25" max="99" />
+    </div>
+    <div class="ig">
+      <label>Life expectancy</label>
+      <input type="number" id="lifespan" value="85" min="50" max="120" />
+    </div>
+    <div class="ig">
+      <label>Monthly expenditure (₹)</label>
+      <input type="number" id="monthlyExp" value="75000" min="0" step="1000" />
+    </div>
+    <div class="ig">
+      <label>Pre-retirement ROI (%/yr)</label>
+      <input type="number" id="roiPre" value="12" min="0" max="50" step="0.5" />
+    </div>
+    <div class="ig">
+      <label>Post-retirement ROI (%/yr)</label>
+      <input type="number" id="roiPost" value="8" min="0" max="30" step="0.5" />
+    </div>
+    <div class="ig">
+      <label>Expected inflation (%/yr)</label>
+      <input type="number" id="inflation" value="6" min="0" max="30" step="0.5" />
+    </div>
+  </div>
+
+  <hr />
+
+  <!-- ── RESULTS ── -->
+  <p class="sec">Summary</p>
+  <div class="metrics-grid" id="metrics"></div>
+  <div id="verdict" class="verdict"></div>
+  <div class="info-box" id="minSipBox"></div>
+
+  <!-- ── CHART ── -->
+  <p class="sec">Corpus projection</p>
+  <div id="retNote"></div>
+  <div class="legend">
+    <span><span class="swatch" style="background:#185FA5"></span>Accumulation phase</span>
+    <span><span class="swatch" style="background:#BA7517"></span>Withdrawal phase</span>
+    <span><span class="dash-swatch"></span>Required corpus</span>
+  </div>
+  <div class="chart-wrap">
+    <canvas id="projChart"
+      role="img"
+      aria-label="Corpus projection chart across your lifetime, showing accumulation before retirement and depletion after">
+    </canvas>
+  </div>
+
+  <div class="footer">
+    <strong>Methodology:</strong>
+    Pre-retirement corpus uses monthly compounding at the given ROI, with the SIP stepping up once per year.
+    Required corpus is computed via the growing annuity present value formula:
+    <em>PV = PMT × [1 − ((1+g)/(1+r))^n] / (r − g)</em>, where PMT = inflation-adjusted annual expenditure at retirement,
+    g = inflation rate, r = post-retirement ROI, n = years in retirement.
+    Minimum SIP is solved via binary search against that required corpus.
+    Post-retirement simulation uses annual compounding and annual withdrawals growing at the inflation rate.
+  </div>
+
+</div>
+
+<!-- ══════════════════════════════════════════════
+     CALCULATION ENGINE
+     All logic is pure JS — no server, no build step.
+     Open this file in any modern browser.
+════════════════════════════════════════════════ -->
+<script>
+"use strict";
+
+let chart = null;
+
+// ── Formatting ──────────────────────────────────────────────────────────────
+
+/**
+ * Format a number as Indian Rupees with Cr / L suffixes.
+ * @param {number} n
+ * @returns {string}
+ */
+function fmtINR(n) {
+  if (n === null || isNaN(n) || !isFinite(n)) return "—";
+  const neg = n < 0;
+  const abs = Math.abs(n);
+  let s;
+  if      (abs >= 1e7) s = "₹" + (abs / 1e7).toFixed(2) + " Cr";
+  else if (abs >= 1e5) s = "₹" + (abs / 1e5).toFixed(1)  + " L";
+  else                 s = "₹" + Math.round(abs).toLocaleString("en-IN");
+  return neg ? "-" + s : s;
+}
+
+// ── Core calculation engine ─────────────────────────────────────────────────
+
+/**
+ * Run the full lifetime simulation from current inputs.
+ * Returns all data needed for the UI and chart.
+ */
+function calculate() {
+  // Read inputs
+  const currentCorpus  = +document.getElementById("corpus").value       || 0;
+  const currentSIP     = +document.getElementById("sip").value          || 0;
+  const sipStepUp      = +document.getElementById("stepup").value       || 0;
+  const currentAge     = +document.getElementById("currentAge").value   || 30;
+  const retirementAge  = +document.getElementById("retirementAge").value || 55;
+  const lifespan       = +document.getElementById("lifespan").value     || 85;
+  const monthlyExp     = +document.getElementById("monthlyExp").value   || 0;
+  const roiPre         = +document.getElementById("roiPre").value       || 0;
+  const roiPost        = +document.getElementById("roiPost").value      || 0;
+  const inflation      = +document.getElementById("inflation").value    || 0;
+
+  const yearsToRet   = Math.max(Math.floor(retirementAge - currentAge), 0);
+  const yearsPostRet = Math.max(lifespan - retirementAge, 0);
+
+  // Monthly ROI for pre-retirement compounding
+  const mRoiPre = roiPre / 100 / 12;
+
+  // Annual rates for post-retirement
+  const r = roiPost   / 100;
+  const g = inflation / 100;
+
+  // ── Phase 1: Pre-retirement accumulation ──────────────────────────────────
+  // Monthly compounding: corpus = corpus * (1 + monthly_roi) + SIP each month
+  // SIP steps up by sipStepUp% at the end of each year.
+
+  const ages     = [];   // x-axis labels (integer ages)
+  const preData  = [];   // corpus values during accumulation (null after retirement)
+  const postData = [];   // corpus values during withdrawal (null before retirement)
+  const reqLine  = [];   // flat line at required corpus level (null after retirement)
+
+  let corpus = currentCorpus;
+  let sip    = currentSIP;
+
+  ages.push(currentAge);
+  preData.push(corpus);
+  postData.push(null);
+
+  for (let y = 1; y <= yearsToRet; y++) {
+    for (let m = 0; m < 12; m++) {
+      corpus = corpus * (1 + mRoiPre) + sip;
+    }
+    sip = sip * (1 + sipStepUp / 100);   // annual step-up at year end
+    ages.push(currentAge + y);
+    preData.push(corpus);
+    postData.push(null);
+  }
+
+  const corpusAtRet = corpus;
+
+  // ── Required corpus (growing annuity PV) ─────────────────────────────────
+  // Monthly expenditure inflated from today to retirement date.
+  const mExpAtRet  = monthlyExp * Math.pow(1 + g, yearsToRet);
+  const aExpAtRet  = mExpAtRet * 12;   // annualised
+
+  // PV of a growing annuity:
+  //   PV = PMT * [1 - ((1+g)/(1+r))^n] / (r - g)   when r ≠ g
+  //   PV = PMT * n                                    when r = g
+  let reqCorpus = 0;
+  if (yearsPostRet > 0) {
+    reqCorpus = Math.abs(r - g) < 0.0001
+      ? aExpAtRet * yearsPostRet
+      : aExpAtRet * (1 - Math.pow((1 + g) / (1 + r), yearsPostRet)) / (r - g);
+  }
+
+  // Required corpus flat line covers accumulation phase only
+  for (let i = 0; i < ages.length; i++) reqLine.push(reqCorpus);
+
+  // ── Phase 2: Post-retirement withdrawal ───────────────────────────────────
+  // Annual compounding: corpus = corpus * (1 + r) - annual_expense
+  // Annual expense grows at inflation rate each year.
+
+  // Connect the two line segments at the retirement point
+  postData[postData.length - 1] = corpusAtRet;
+
+  let postCorpus  = corpusAtRet;
+  let annExp      = aExpAtRet;
+  let moneyOutAge = null;
+
+  for (let y = 1; y <= yearsPostRet; y++) {
+    postCorpus = postCorpus * (1 + r) - annExp;
+    annExp     = annExp * (1 + g);
+    ages.push(retirementAge + y);
+    preData.push(null);
+    postData.push(Math.max(postCorpus, 0));
+    reqLine.push(null);
+    if (postCorpus < 0 && moneyOutAge === null) {
+      moneyOutAge = retirementAge + y;
+    }
+  }
+
+  // Detect whether corpus grows in retirement (returns > withdrawals in year 1)
+  const firstYearReturn          = corpusAtRet * r;
+  const corpusGrowsInRetirement  = firstYearReturn > aExpAtRet;
+
+  // ── Minimum SIP (binary search) ───────────────────────────────────────────
+  // Find the smallest monthly SIP today such that the corpus at retirement
+  // equals reqCorpus.  Step-up % still applies.
+  let minSIP = null;
+  if (yearsToRet > 0) {
+    function simWithSIP(testSIP) {
+      let c  = currentCorpus;
+      let ss = testSIP;
+      for (let y = 0; y < yearsToRet; y++) {
+        for (let m = 0; m < 12; m++) {
+          c = c * (1 + mRoiPre) + ss;
+        }
+        ss = ss * (1 + sipStepUp / 100);
+      }
+      return c;
+    }
+
+    let lo = 0, hi = 30_000_000;
+    for (let i = 0; i < 64; i++) {
+      const mid = (lo + hi) / 2;
+      simWithSIP(mid) < reqCorpus ? (lo = mid) : (hi = mid);
+    }
+    minSIP = Math.max((lo + hi) / 2, 0);
+  }
+
+  return {
+    // Chart data
+    ages, preData, postData, reqLine,
+    // Key results
+    corpusAtRet, reqCorpus, mExpAtRet, aExpAtRet,
+    minSIP, moneyOutAge,
+    isFeasible: corpusAtRet >= reqCorpus,
+    corpusGrowsInRetirement, firstYearReturn,
+    // Pass-through for display
+    retirementAge, lifespan, currentSIP, yearsToRet,
+  };
+}
+
+// ── UI renderer ─────────────────────────────────────────────────────────────
+
+function render() {
+  const d = calculate();
+  const surplus = d.corpusAtRet - d.reqCorpus;
+
+  // Metric cards
+  document.getElementById("metrics").innerHTML = `
+    <div class="mc">
+      <div class="lb">Corpus at retirement</div>
+      <div class="vl">${fmtINR(d.corpusAtRet)}</div>
+    </div>
+    <div class="mc">
+      <div class="lb">Required corpus</div>
+      <div class="vl">${fmtINR(d.reqCorpus)}</div>
+    </div>
+    <div class="mc">
+      <div class="lb">Monthly needs at ${d.retirementAge}</div>
+      <div class="vl">${fmtINR(d.mExpAtRet)}</div>
+    </div>
+    <div class="mc">
+      <div class="lb">${d.isFeasible ? "Surplus" : "Shortfall"}</div>
+      <div class="vl ${d.isFeasible ? "success" : "danger"}">${fmtINR(Math.abs(surplus))}</div>
+    </div>
+  `;
+
+  // Feasibility verdict
+  const vEl = document.getElementById("verdict");
+  vEl.className = "verdict " + (d.isFeasible ? "success" : "danger");
+  if (d.isFeasible) {
+    const tail = d.moneyOutAge
+      ? ` Note: simulation shows funds may deplete around age ${d.moneyOutAge} — review post-retirement ROI assumptions.`
+      : ` Corpus sustains expenses through age ${d.lifespan}.`;
+    vEl.textContent = `Retirement at ${d.retirementAge} is feasible. Projected corpus exceeds required by ${fmtINR(surplus)}.${tail}`;
+  } else {
+    const tail = d.moneyOutAge ? ` Funds run out around age ${d.moneyOutAge}.` : "";
+    vEl.textContent = `Retirement at ${d.retirementAge} is not feasible. Corpus falls short by ${fmtINR(-surplus)}.${tail}`;
+  }
+
+  // Minimum SIP box
+  const msEl = document.getElementById("minSipBox");
+  if (d.minSIP !== null) {
+    const diff      = d.minSIP - d.currentSIP;
+    const sufficient = diff <= 100;
+    msEl.innerHTML = `
+      <div class="label">Minimum monthly SIP to retire at ${d.retirementAge}</div>
+      <span class="big">${fmtINR(d.minSIP)}</span>
+      <span class="tag ${sufficient ? "success" : "danger"}">
+        ${sufficient
+          ? "✓ current SIP is already sufficient"
+          : "↑ need " + fmtINR(diff) + " more per month"}
+      </span>
+    `;
+  } else {
+    msEl.innerHTML = `<div class="label">Set retirement age above current age to compute minimum SIP.</div>`;
+  }
+
+  // Growing-corpus note
+  const noteEl = document.getElementById("retNote");
+  if (d.corpusGrowsInRetirement && d.isFeasible) {
+    noteEl.innerHTML = `<span class="note-pill">
+      Corpus grows in retirement — annual returns (${fmtINR(d.firstYearReturn)}) exceed
+      first-year withdrawal (${fmtINR(d.aExpAtRet)}). This is why the amber line slopes upward.
+    </span>`;
+  } else {
+    noteEl.innerHTML = "";
+  }
+
+  // Chart
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById("projChart"), {
+    type: "line",
+    data: {
+      labels: d.ages,
+      datasets: [
+        {
+          label: "Accumulation phase",
+          data: d.preData,
+          borderColor: "#185FA5",
+          backgroundColor: "rgba(24,95,165,0.07)",
+          fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2, spanGaps: false,
+        },
+        {
+          label: "Withdrawal phase",
+          data: d.postData,
+          borderColor: "#BA7517",
+          backgroundColor: "rgba(186,117,23,0.07)",
+          fill: true, tension: 0.35, pointRadius: 0, borderWidth: 2, spanGaps: false,
+        },
+        {
+          label: "Required corpus",
+          data: d.reqLine,
+          borderColor: "#E24B4A",
+          borderDash: [5, 4],
+          borderWidth: 1.5,
+          pointRadius: 0, fill: false, tension: 0, spanGaps: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: items => "Age " + items[0].label,
+            label: ctx  => ctx.parsed.y === null ? null : ctx.dataset.label + ": " + fmtINR(ctx.parsed.y),
+          },
+          filter: item => item.parsed.y !== null,
+        },
+      },
+      scales: {
+        x: {
+          ticks: {
+            font: { size: 11 },
+            callback: (val, idx) => d.ages[idx] % 5 === 0 ? d.ages[idx] : "",
+          },
+          grid: { color: "rgba(128,128,128,0.08)" },
+        },
+        y: {
+          ticks: {
+            font: { size: 11 },
+            callback: val => fmtINR(val),
+            maxTicksLimit: 6,
+          },
+          grid: { color: "rgba(128,128,128,0.08)" },
+        },
+      },
+    },
+  });
+}
+
+// Re-render on any input change
+document.querySelectorAll("input").forEach(el => el.addEventListener("input", render));
+
+// Initial render
+render();
+</script>
+</body>
+</html>
